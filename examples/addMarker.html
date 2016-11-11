@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html ng-app="example">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../node_modules/mapbox-gl/dist/mapbox-gl.css" />
+
+    <script src="../node_modules/angular/angular.js"></script>
+    <script src="../node_modules/mapbox-gl/dist/mapbox-gl.js"></script>
+
+    <script src="../src/mbxNg.module.js"></script>
+    <script src="../src/mbxNgDefaults.service.js"></script>
+    <script src="../src/mbxNgHelpers.service.js"></script>
+    <script src="../src/mbxNgMap.service.js"></script>
+    <script src="../src/mbxNgMap.controller.js"></script>
+    <script src="../src/mbxNgMap.component.js"></script>
+
+    <script>
+      angular
+          .module('example', ['mapbox-ng-map-component'])
+          .service('exampleMapService', exampleMapService)
+          .controller('ExampleController', ExampleController);
+
+      exampleMapService.$inject = ['mbxNgMapService'];
+
+      function exampleMapService(mbxNgMapService) {
+        var iterator = 0;
+        var markerLayers = [];
+
+        return {
+          registerAddMarker: registerAddMarker
+        };
+
+        function registerAddMarker() {
+          mbxNgMapService.getMap('map').then(function(map) {
+            map.on('click', addCustomMarker);
+          });
+        }
+
+        function addCustomMarker(event) {
+          var geojson = {
+            "type": "FeatureCollection",
+            "features": [{
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [event.lngLat.lng, event.lngLat.lat]
+              }
+            }]
+          };
+          var map = event.target;
+
+          var id = 'marker-' + iterator;
+          iterator++;
+
+          markerLayers.push(id);
+
+          map.addSource(id, {
+            type: 'geojson',
+            data: geojson
+          });
+
+          map.addLayer({
+            id: id,
+            type: 'symbol',
+            source: id,
+            layout: {
+              'icon-size': 1,
+              'icon-image': 'park-15'
+            }
+          });
+        }
+      }
+
+      ExampleController.$inject = ['exampleMapService'];
+
+      function ExampleController(exampleMapService) {
+        var $ctrl = this;
+        mapboxgl.accessToken = 'pk.eyJ1IjoiY2xldmVyYW5hbHl0aWNzIiwiYSI6IldYRHVsX1kifQ.O-HKnLOncLAf3BjokIycLQ';
+        $ctrl.mapOptions = {
+          style: 'mapbox://styles/mapbox/streets-v9',
+          center: [16.6, 49.2],
+          zoom: 10
+        };
+
+        exampleMapService.registerAddMarker();
+      }
+    </script>
+
+    <style type="text/css">
+      body {
+        margin: 0;
+      }
+      mbx-ng-map {
+        display: block;
+        width: 100%;
+        height: 400px;
+      }
+    </style>
+  </head>
+
+  <body ng-controller="ExampleController as $ctrl">
+    <h3>Example of using mbxNgMapService</h3>
+    <p>
+      mbxNgMapService is used to get map object and register click events.
+      Try to click on map to add markers.
+    </p>
+    <mbx-ng-map id="map" mbx-ng-options="::$ctrl.mapOptions"></mbx-ng-map>
+  </body>
+</html>
